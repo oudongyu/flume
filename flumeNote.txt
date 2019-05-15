@@ -131,3 +131,47 @@ exec-memory-avro 到 avro-memory-logger
 42.
 43.a1.sources.r1.channels = c1
 44.a1.sinks.k1.channel = c1
+
+3.4 拦截器 
+host拦截器使用
+a1.sources = r1
+a1.sinks = k1
+a1.channels = c1
+
+# Describe/configure the source
+a1.sources.r1.type = exec
+a1.sources.r1.command = tail -F /flumeTest/log.0
+
+
+a1.sources.r1.interceptors = i1
+a1.sources.r1.interceptors.i1.type = host
+a1.sources.r1.interceptors.i1.useIP = false
+a1.sources.r1.interceptors.i1.hostHeader = hostname
+
+
+# Use a channel which buffers events in memory
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 1000
+a1.channels.c1.transactionCapacity = 1000
+
+# Bind the source and sink to the channel
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1
+
+# Describe the sink
+a1.sinks.k1.type = hdfs
+a1.sinks.k1.channel = c1
+a1.sinks.k1.hdfs.path = /flume/events/%{hostname}/%y-%m-%d/
+a1.sinks.k1.hdfs.fileType = DataStream
+a1.sinks.k1.hdfs.useLocalTimeStamp = true
+a1.sinks.k1.hdfs.filePrefix = events-
+#当文件大小为52428800字节时，将临时文件滚动成一个目标文件
+a1.sinks.hdfsSink.hdfs.rollSize = 52428800
+#events数据达到该数量的时候，将临时文件滚动成目标文件
+a1.sinks.hdfsSink.hdfs.rollCount = 0
+#每隔N s将临时文件滚动成一个目标文件
+a1.sinks.hdfsSink.hdfs.rollInterval = 1200
+#配置前缀和后缀
+a1.sinks.hdfsSink.hdfs.filePrefix=run
+a1.sinks.hdfsSink.hdfs.fileSuffix=.data
+
