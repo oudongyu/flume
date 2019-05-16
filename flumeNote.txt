@@ -175,3 +175,25 @@ a1.sinks.hdfsSink.hdfs.rollInterval = 1200
 a1.sinks.hdfsSink.hdfs.filePrefix=run
 a1.sinks.hdfsSink.hdfs.fileSuffix=.data
 
+REGEX_FILTER拦截器
+a1.sources = r1
+a1.sinks = k1
+a1.channels = c1
+
+a1.sources.r1.type = exec
+a1.sources.r1.command = tail -F /opt/flume-1.7.0/flumeTest/log.1
+a1.sources.r1.interceptors=i4
+a1.sources.r1.interceptors.i4.type=REGEX_FILTER
+
+a1.sources.r1.interceptors.i4.regex=(error)|(warn)
+#false 代表 只要符合条件的，true代表 只要匹配不到的结果
+a1.sources.r1.interceptors.i4.excludeEvents=false
+
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 1000
+a1.channels.c1.transactionCapacity = 100
+
+a1.sinks.k1.type = logger
+
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1
