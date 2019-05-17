@@ -75,6 +75,7 @@ a1.sinks.k1.channel = c1
 
 执行agent:
 flume-ng agent -n a1 -c /opt/flume-1.7.0/conf/ -f /opt/flume-1.7.0/flumeTest/spool-hdfs.conf -Dflume.root.logger=INFO,console
+
 3.2. Exec+memory+logger
 创建配置文件a2.conf：
 #定义agent名， source、channel、sink的名称
@@ -98,6 +99,7 @@ a2.sinks = k1
 15.a2.sinks.k1.channel = c1
 执行agent:
 bin/flume-ng agent -n a2  conf -f /hadoop/testdata/flume/a2.conf -Dflume.root.logger=INFO,console
+
 3.3 .两台机器之间发送日志
 exec-memory-avro 到 avro-memory-logger
 第一台机器的conf
@@ -132,7 +134,32 @@ exec-memory-avro 到 avro-memory-logger
 43.a1.sources.r1.channels = c1
 44.a1.sinks.k1.channel = c1
 
-3.4 拦截器 
+3.4 tailDir可以监控指定文件夹下能匹配到的文件数据，并且可以实时更新
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1
+
+a1.sources.r1.type = TAILDIR
+a1.sources.r1.positionFile = /opt/flume-1.7.0/taildir_position.json
+a1.sources.r1.filegroups = f1 f2
+#a1.sources.r1.filegroups = f1
+a1.sources.r1.filegroups.f1 = /opt/flume-1.7.0/flumeTest/tailDir/example.log
+a1.sources.r1.headers.f1.headerKey1 = value1
+a1.sources.r1.filegroups.f2 = /opt/flume-1.7.0/flumeTest/tailDir/.*log.*
+a1.sources.r1.headers.f2.headerKey1 = value2
+a1.sources.r1.headers.f2.headerKey2 = value2-2
+a1.sources.r1.fileHeader = true
+
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 10000
+
+a1.sinks.k1.type = logger
+
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1
+
+3.5 拦截器 
 host拦截器使用
 a1.sources = r1
 a1.sinks = k1
