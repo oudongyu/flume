@@ -312,4 +312,34 @@ a1.sinks.k1.hdfs.callTimeout=30000
 a1.sources.r1.channels = c1
 a1.sinks.k1.channel = c1
 
+Search and Replace Interceptor 查找替换拦截器
 
+a1.sources = r1
+a1.sinks = k1
+a1.channels = c1
+
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = localhost
+a1.sources.r1.port = 4545
+
+#a1.sources.r1.interceptors = i1
+#a1.sources.r1.interceptors.i1.type = search_replace
+#
+#a1.sources.r1.interceptors.i1.searchPattern = ^[A-Za-z0-9_]+
+#a1.sources.r1.interceptors.i1.replaceString = 666
+
+a1.sources.r1.interceptors = i1
+a1.sources.r1.interceptors.i1.type = search_replace
+
+# Use grouping operators to reorder and munge words on a line.
+a1.sources.r1.interceptors.i1.searchPattern = The ([a-z]+) ju ([a-z]+)
+a1.sources.r1.interceptors.i1.replaceString = The $2 $1
+
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 2000
+a1.channels.c1.transactionCapacity = 1000
+
+a1.sinks.k1.type = logger
+
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1
