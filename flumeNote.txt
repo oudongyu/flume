@@ -343,3 +343,8 @@ a1.sinks.k1.type = logger
 
 a1.sources.r1.channels = c1
 a1.sinks.k1.channel = c1
+
+
+Flume Sink Processors：接收器组允许用户将多个接收器分组到一个实体中。接收器处理器可以用于对组内的所有接收器提供负载平衡功能，或者在发生时间故障时实现从一个接收器到另一个接收器的故障转移。
+
+
