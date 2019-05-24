@@ -1,0 +1,127 @@
+package com.hd;
+
+import org.apache.flume.Context;
+import org.apache.flume.Event;
+import org.apache.flume.interceptor.Interceptor;
+
+import java.util.HashMap;
+import java.util.List;
+
+import static com.hd.noPasswordInterceptor.Constants.*;
+
+public class noPasswordInterceptor implements Interceptor {
+    private String splitParm;
+    private int passSeek;
+    HashMap<String, String> passLaw = new HashMap<String, String>();
+
+    public noPasswordInterceptor(String splitParm) {
+        this.splitParm = splitParm;
+    }
+
+    public noPasswordInterceptor(String splitParm, int passSeek) {
+        this.splitParm = splitParm;
+        this.passSeek = passSeek;
+    }
+
+
+    //    初始化   这个方法中的代码只会在 运行时 执行一次
+    public void initialize() {
+        passLaw.put("1", "z");
+        passLaw.put("2", "a");
+        passLaw.put("3", "r");
+        passLaw.put("4", "e");
+        passLaw.put("5", "y");
+        passLaw.put("6", "p");
+        passLaw.put("7", "o");
+        passLaw.put("8", "i");
+        passLaw.put("9", "m");
+        passLaw.put("0", "s");
+    }
+
+    //
+    public Event intercept(Event event) {
+        String s = new String(event.getBody());
+        String[] split = s.split(splitParm);
+//        System.out.println(splitParm+"_"+split.length);
+//        System.out.println("-----");
+//        当通过指定分隔符 分割 时，数组长度还是1 ，说明分割失败，指定分隔符有问题，直接返回event
+        if (split.length <= 1) {
+            return event;
+        }
+        String passWd = split[passSeek];
+//        String newPassWd = passLaw.get(passWd.split("")[0]);
+        String[] strings = passWd.split("");
+        String s2 = "";
+        for (String string : strings) {
+            String s3 = passLaw.get(string);
+            s2 += s3;
+        }
+//        现在已经有了新密码，我们只需将 老密码替换成新密码即可
+        String replace = s.replace(passWd, s2);
+        event.setBody(replace.getBytes());
+//        event.setBody((passWd+"-"+s2+"-"+splitParm).getBytes());
+        return event;
+    }
+
+    //
+    public List<Event> intercept(List<Event> list) {
+        for (Event event : list) {
+            intercept(event);
+        }
+        return list;
+    }
+
+    // 关闭资源的
+    public void close() {
+
+    }
+
+    public static class builder implements Interceptor.Builder {
+        private String splitParm = SPLITPARM;
+        private int passSeek = PASSSEEK;
+
+        //调用对象的，可以传参数
+        public Interceptor build() {
+//            return new noPasswordInterceptor();
+            return new noPasswordInterceptor(splitParm,passSeek);
+        }
+
+        //设置参数， 默认值   配置
+        public void configure(Context context) {
+//            可以两个或者一个参数，   一个参数 指定变量的名字。  另一个参数是 默认值
+            splitParm = context.getString(SPLITPARM2, SPLITPARM);
+            passSeek = context.getInteger(PASSSEEK2, PASSSEEK);
+        }
+    }
+
+    public static class Constants {
+        public static String SPLITPARM = ",";
+        public static int PASSSEEK = 1;
+        public static String SPLITPARM2 = "splitParm";
+        public static String PASSSEEK2 = "passSeek";
+    }
+}
+
+
+测试的conf:
+a1.sources = r1
+a1.channels = c1
+a1.sinks = k1
+
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = jh01
+a1.sources.r1.port = 4545
+
+a1.sources.r1.interceptors = i1
+a1.sources.r1.interceptors.i1.type = com.hd.noPasswordInterceptor$builder
+a1.sources.r1.interceptors.i1.splitParm=-
+a1.sources.r1.interceptors.i1.passSeek=0
+
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 1000
+
+a1.sinks.k1.type = logger
+
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1
