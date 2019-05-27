@@ -1,0 +1,238 @@
+﻿查看数据库中所有的databases：
+sqoop list-databases --connect jdbc:mysql://jh01:3306/ --username root --password 123456 
+导入整张表：
+sqoop import \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff \
+--target-dir /user/company \
+--delete-target-dir \
+--num-mappers 1 \
+--fields-terminated-by "\t"
+导入符合条件的数据： query和 table不能同时使用
+sqoop import \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--target-dir /user/company \
+--delete-target-dir \
+--num-mappers 1 \
+--fields-terminated-by "\t" \
+--query 'select name,sex from staff where id <=1 and id=1 and $CONDITIONS;'
+sqoop关键字查询导入数据：
+sqoop import \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--target-dir /user/company \
+--delete-target-dir \
+--num-mappers 1 \
+--fields-terminated-by "\t" \
+--table staff \
+--where "id=1 or id=2"
+1.hive中数据还存在，但是元数据没有了，所以用hive并不能看到之前在hive中创建的表以及数据。
+导入指定的列：
+sqoop import \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--target-dir /user/company \
+--delete-target-dir \
+--num-mappers 1 \
+--fields-terminated-by "\t" \
+--columns id,sex \
+--table staff
+设定参数： 如：副本数
+sqoop import -D dfs.replication=4 \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--target-dir /user/company \
+--delete-target-dir \
+--num-mappers 1 \
+--fields-terminated-by "\t" \
+--columns id,sex \
+--table staff
+将数据库中的指定数据写入hive中：  hive中的表不存在可以自动创建
+sqoop import \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff \
+--m 1 \
+--hive-import \
+--fields-terminated-by "\t" \
+--delete-target-dir \
+--hive-table staff_hive
+--hive-database abc \
+--hive-overwrite \
+从hive/hdfs导入数据库： 数据库的表必须存在
+sqoop export \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff \
+--num-mappers 1 \
+--export-dir /user/hive/warehouse/staff_hive \
+--input-fields-terminated-by "\t"
+
+sqoop脚本：
+创建一个sqoop脚本：HDFS2MYSQL.opt   
+export
+--connect
+jdbc:mysql://jh01:3306/company
+--username
+root
+--password
+123456
+--table
+staff
+--num-mappers
+1
+--export-dir
+/user/hive/warehouse/staff_hive
+--input-fields-terminated-by
+"\t"
+上课测试报错原因：由于staff_hive路径下的数据有些id是相同的，但是 mysql的staff表中id是主键不能重复，所以导致报错，本身写的sqoop脚本没有问题
+运行sqoop脚本的命令：
+sqoop --options-file ./HDFS2MYSQL.opt
+
+--map-column-hive id=string
+创建一张hive分区表，将指定数据写入指定分区：
+sqoop import \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff \
+--m 1 \
+--hive-import \
+--hive-database abc \
+--hive-table staff_partition \
+--hive-partition-key shijian \
+--hive-partition-value 20190527 \
+--fields-terminated-by "\t" \
+--direct
+增量导入数据到hive，append模式：
+sqoop import \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff \
+--num-mappers 1 \
+--fields-terminated-by "\t" \
+--target-dir /user/hive/warehouse/staff_hive \
+--check-column id \
+--incremental append \
+--last-value 1
+
+
+
+增量导入数据到 hdfs 中，mode=lastmodified
+create table company.staff_timestamp(id int(4), name varchar(255), sex varchar(255), last_modified timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE
+CURRENT_TIMESTAMP);
+插入数据，先导入一部分数据：
+sqoop import \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff_timestamp \
+--delete-target-dir \
+--m 1
+
+
+sqoop import \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff_timestamp \
+--check-column last_modified \
+--incremental lastmodified \
+--last-value "2019-05-27 15:38:00" \
+--m 1 \
+--append
+
+
+对 --null-string 的测试：
+sqoop import \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff \
+--delete-target-dir \
+--target-dir /user/aaa \
+--m 1 \
+--null-string ""
+
+命令&参数：codegen:
+sqoop codegen \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff \
+--bindir /test/staff \
+--class-name Staff \
+--fields-terminated-by "\t"
+
+命令&参数：create-hive-table:
+sqoop create-hive-table \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff \
+--hive-table hive_staff03
+
+命令&参数：eval:
+sqoop eval \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--query "SELECT * FROM staff"
+
+命令&参数：import-all-tables:
+--warehouse-dir 在指定路径下 再次创建目录 对数据分类
+--target-dir 将数据写入指定的hdfs路径
+
+
+命令&参数：job:  会生成一个job任务但不运行，  可以通过 --exec来运行job
+sqoop job \
+--create myjob02 -- import-all-tables \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456
+
+sqoop job --list  列出job任务
+sqoop job --exec jobName  指定指定job任务
+
+5.2.14命令&参数：merge:
+
+创建 JavaBean：
+sqoop codegen \
+--connect jdbc:mysql://jh01:3306/company \
+--username root \
+--password 123456 \
+--table staff \
+--bindir /test/staff02 \
+--class-name Staff \
+--fields-terminated-by "\t"
+
+
+sqoop merge \
+--new-data /test/new/ \
+--onto /test/old/ \
+--target-dir /test/merged \
+--jar-file /test/staff02/Staff.jar \
+--class-name Staff \
+--merge-key id
+
+上课测试失败原因:测试数据的分隔符有问题，测试数据应该在notepad上先写好，在复制到Linux上，不然分隔符会变多个。
+
+
+
+
+
+
+
+
+
+
